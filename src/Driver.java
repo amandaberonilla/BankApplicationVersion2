@@ -1,10 +1,11 @@
+// -----------------------------------------------------
+// COMP 346 - Winter 2023
+// Suha Abubakr [40120785 - Section NN]
+// Amanda Beronilla [ 40228871- Section WW]
+// Assignment # 2
+// Due Date: March 18, 2023 at 11:59 PM
+// -----------------------------------------------------
 
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
@@ -15,6 +16,8 @@ import java.io.PrintWriter;
  * @author Kerly Titus
  */
 public class Driver extends Thread {
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
 
     /** 
      * main class
@@ -43,6 +46,13 @@ public class Driver extends Thread {
         objClient1.start();
         Client objClient2 = new Client("receiving");
         objClient2.start();
+    }
+
+    public static void displayMessage() {
+        System.out.println(ANSI_YELLOW + "----------------------------------------");
+        System.out.println("         COMP 346 Assignment 2");
+        System.out.println("     Suha Abubakr & Amanda Beronilla");
+        System.out.println("----------------------------------------" + ANSI_RESET);
     }
     
  }
