@@ -26,20 +26,19 @@ public class Network extends Thread {
     private static String inBufferStatus, outBufferStatus;     /* Current status of the network buffers - normal, full, empty */
     private static String networkStatus;                       /* Network status - active, inactive */
 
-//    private static Semaphore outBuffEmpty;
-//    private static Semaphore outBuffFull;
-//    private static Semaphore inBuffEmpty;
-//    private static Semaphore inBuffFull;
-//    private static Semaphore mutexOut;
-//    private static Semaphore mutexIn;
+    private static Semaphore outBuffEmpty;
+    private static Semaphore outBuffFull;
+    private static Semaphore inBuffEmpty;
+    private static Semaphore inBuffFull;
+    private static Semaphore mutexOut;
+    private static Semaphore mutexIn;
     /** 
      * Constructor of the Network class
      * 
      * @return 
      * @param
      */
-     Network( )
-      { 
+     Network() {
     	 int i;  
         
          System.out.println("\n Activating the network ...");
@@ -61,12 +60,14 @@ public class Network extends Thread {
          inputIndexServer = 0;
          outputIndexServer = 0;
          outputIndexClient = 0;
-//         outBuffEmpty = new Semaphore(maxNbPackets);
-//         outBuffFull = new Semaphore(0);
-//         inBuffEmpty = new Semaphore(maxNbPackets);
-//         inBuffFull = new Semaphore(0);
-//         mutexOut = new Semaphore(1);
-//         mutexIn = new Semaphore(1);
+
+         // Initialize Semaphore values
+         outBuffEmpty = new Semaphore(maxNbPackets);
+         outBuffFull = new Semaphore(0);
+         inBuffEmpty = new Semaphore(maxNbPackets);
+         inBuffFull = new Semaphore(0);
+         mutexOut = new Semaphore(1);
+         mutexIn = new Semaphore(1);
          networkStatus = "active";
       }     
         
@@ -363,87 +364,80 @@ public class Network extends Thread {
      * @param inPacket transaction transferred from the client
      * 
      */
-        public static boolean send(Transactions inPacket)
-        {
-//            try{
-//                inBuffEmpty.acquire();
-//                mutexIn.acquire();
-//            }
-//            catch (InterruptedException e){
-//                e.printStackTrace();
-//            }
+    public static boolean send(Transactions inPacket) {
+        try {
+            inBuffEmpty.acquire();
+            mutexIn.acquire();
+        }
+        catch (InterruptedException e){
+            e.printStackTrace();
+        }
 
-            inComingPacket[inputIndexClient].setAccountNumber(inPacket.getAccountNumber());
-            inComingPacket[inputIndexClient].setOperationType(inPacket.getOperationType());
-            inComingPacket[inputIndexClient].setTransactionAmount(inPacket.getTransactionAmount());
-            inComingPacket[inputIndexClient].setTransactionBalance(inPacket.getTransactionBalance());
-            inComingPacket[inputIndexClient].setTransactionError(inPacket.getTransactionError());
-            inComingPacket[inputIndexClient].setTransactionStatus("transferred");
+        inComingPacket[inputIndexClient].setAccountNumber(inPacket.getAccountNumber());
+        inComingPacket[inputIndexClient].setOperationType(inPacket.getOperationType());
+        inComingPacket[inputIndexClient].setTransactionAmount(inPacket.getTransactionAmount());
+        inComingPacket[inputIndexClient].setTransactionBalance(inPacket.getTransactionBalance());
+        inComingPacket[inputIndexClient].setTransactionError(inPacket.getTransactionError());
+        inComingPacket[inputIndexClient].setTransactionStatus("transferred");
 
-            /* System.out.println("\n DEBUG : Network.send() - index inputIndexClient " + inputIndexClient); */
-            /* System.out.println("\n DEBUG : Network.send() - account number " + inComingPacket[inputIndexClient].getAccountNumber()); */
+        /* System.out.println("\n DEBUG : Network.send() - index inputIndexClient " + inputIndexClient); */
+        /* System.out.println("\n DEBUG : Network.send() - account number " + inComingPacket[inputIndexClient].getAccountNumber()); */
 
-            setinputIndexClient(((getinputIndexClient( ) + 1) % getMaxNbPackets ()));	/* Increment the input buffer index  for the client */
-            /* Check if input buffer is full */
-            if (getinputIndexClient() == getoutputIndexServer())
-            {
-                setInBufferStatus("full");
+        setinputIndexClient(((getinputIndexClient() + 1) % getMaxNbPackets ()));	/* Increment the input buffer index  for the client */
+        /* Check if input buffer is full */
+        if(getinputIndexClient() == getoutputIndexServer()) {
+            setInBufferStatus("full");
+            /* System.out.println("\n DEBUG : Network.send() - inComingBuffer status " + getInBufferStatus()); */
+        }
+        else {
+            setInBufferStatus("normal");
+        }
 
-                /* System.out.println("\n DEBUG : Network.send() - inComingBuffer status " + getInBufferStatus()); */
-            }
-            else
-            {
-                setInBufferStatus("normal");
-            }
+        mutexIn.release();
+        inBuffFull.release();
 
-//            mutexIn.release();
-//            inBuffFull.release();
-
-            return true;
-        }   
+        return true;
+    }
          
       /** Transmitting the transactions from the server to the client through the network 
      * @return
      * @param outPacket updated transaction received by the client
      * 
      */
-         public static boolean receive(Transactions outPacket) {
-//             try{
-//                 outBuffFull.acquire();
-//                 mutexOut.acquire();
-//             }
-//             catch (InterruptedException e){
-//                 e.printStackTrace();
-//             }
+    public static boolean receive(Transactions outPacket) {
+        try {
+            outBuffFull.acquire();
+            mutexOut.acquire();
+        }
+        catch (InterruptedException e){
+            e.printStackTrace();
+        }
 
-             outPacket.setAccountNumber(outGoingPacket[outputIndexClient].getAccountNumber());
-             outPacket.setOperationType(outGoingPacket[outputIndexClient].getOperationType());
-             outPacket.setTransactionAmount(outGoingPacket[outputIndexClient].getTransactionAmount());
-             outPacket.setTransactionBalance(outGoingPacket[outputIndexClient].getTransactionBalance());
-             outPacket.setTransactionError(outGoingPacket[outputIndexClient].getTransactionError());
-             outPacket.setTransactionStatus("done");
+        outPacket.setAccountNumber(outGoingPacket[outputIndexClient].getAccountNumber());
+        outPacket.setOperationType(outGoingPacket[outputIndexClient].getOperationType());
+        outPacket.setTransactionAmount(outGoingPacket[outputIndexClient].getTransactionAmount());
+        outPacket.setTransactionBalance(outGoingPacket[outputIndexClient].getTransactionBalance());
+        outPacket.setTransactionError(outGoingPacket[outputIndexClient].getTransactionError());
+        outPacket.setTransactionStatus("done");
 
-             /* System.out.println("\n DEBUG : Network.receive() - index outputIndexClient " + outputIndexClient); */
-             /* System.out.println("\n DEBUG : Network.receive() - account number " + outPacket.getAccountNumber()); */
+        /* System.out.println("\n DEBUG : Network.receive() - index outputIndexClient " + outputIndexClient); */
+        /* System.out.println("\n DEBUG : Network.receive() - account number " + outPacket.getAccountNumber()); */
 
-             setoutputIndexClient(((getoutputIndexClient( ) + 1) % getMaxNbPackets( ))); /* Increment the output buffer index for the client */
-             /* Check if output buffer is empty */
-             if ( getoutputIndexClient( ) == getinputIndexServer( ))
-             {
-                 setOutBufferStatus("empty");
+        setoutputIndexClient(((getoutputIndexClient() + 1) % getMaxNbPackets())); /* Increment the output buffer index for the client */
+        /* Check if output buffer is empty */
+        if(getoutputIndexClient() == getinputIndexServer()) {
+            setOutBufferStatus("empty");
+            /* System.out.println("\n DEBUG : Network.receive() - outGoingBuffer status " + getOutBufferStatus()); */
+        }
+        else {
+            setOutBufferStatus("normal");
+        }
 
-                 /* System.out.println("\n DEBUG : Network.receive() - outGoingBuffer status " + getOutBufferStatus()); */
-             }
-             else
-             {
-                 setOutBufferStatus("normal");
-             }
+        mutexOut.release();
+        outBuffEmpty.release();
 
-//             mutexOut.release();
-//             outBuffEmpty.release();
-
-             return true;
-        }   
+        return true;
+    }
          
     
     /**
@@ -453,44 +447,39 @@ public class Network extends Thread {
      * @param outPacket updated transaction transferred by the server to the network output buffer
      * 
      */
-         public static boolean transferOut(Transactions outPacket)
-        {
-//            try{
-//                outBuffEmpty.acquire();
-//                mutexOut.acquire();
-//            }
-//            catch (InterruptedException e){
-//                e.printStackTrace();
-//            }
+    public static boolean transferOut(Transactions outPacket) {
+        try {
+            outBuffEmpty.acquire();
+            mutexOut.acquire();
+        }
+        catch (InterruptedException e){
+            e.printStackTrace();
+        }
 
-            outGoingPacket[inputIndexServer].setAccountNumber(outPacket.getAccountNumber());
-            outGoingPacket[inputIndexServer].setOperationType(outPacket.getOperationType());
-            outGoingPacket[inputIndexServer].setTransactionAmount(outPacket.getTransactionAmount());
-            outGoingPacket[inputIndexServer].setTransactionBalance(outPacket.getTransactionBalance());
-            outGoingPacket[inputIndexServer].setTransactionError(outPacket.getTransactionError());
-            outGoingPacket[inputIndexServer].setTransactionStatus("transferred");
+        outGoingPacket[inputIndexServer].setAccountNumber(outPacket.getAccountNumber());
+        outGoingPacket[inputIndexServer].setOperationType(outPacket.getOperationType());
+        outGoingPacket[inputIndexServer].setTransactionAmount(outPacket.getTransactionAmount());
+        outGoingPacket[inputIndexServer].setTransactionBalance(outPacket.getTransactionBalance());
+        outGoingPacket[inputIndexServer].setTransactionError(outPacket.getTransactionError());
+        outGoingPacket[inputIndexServer].setTransactionStatus("transferred");
 
-            /* System.out.println("\n DEBUG : Network.transferOut() - index inputIndexServer " + inputIndexServer); */
-            /* System.out.println("\n DEBUG : Network.transferOut() - account number " + outGoingPacket[inputIndexServer].getAccountNumber()); */
+        /* System.out.println("\n DEBUG : Network.transferOut() - index inputIndexServer " + inputIndexServer); */
+        /* System.out.println("\n DEBUG : Network.transferOut() - account number " + outGoingPacket[inputIndexServer].getAccountNumber()); */
 
-            setinputIndexServer(((getinputIndexServer() + 1) % getMaxNbPackets())); /* Increment the output buffer index for the server */
-            /* Check if output buffer is full */
-            if ( getinputIndexServer( ) == getoutputIndexClient( ))
-            {
-                setOutBufferStatus("full");
+        setinputIndexServer(((getinputIndexServer() + 1) % getMaxNbPackets())); /* Increment the output buffer index for the server */
+        /* Check if output buffer is full */
+        if(getinputIndexServer() == getoutputIndexClient()) {
+            setOutBufferStatus("full");
+            /* System.out.println("\n DEBUG : Network.transferOut() - outGoingBuffer status " + getOutBufferStatus()); */
+        }
+        else {
+            setOutBufferStatus("normal");
+        }
 
-                /* System.out.println("\n DEBUG : Network.transferOut() - outGoingBuffer status " + getOutBufferStatus()); */
-            }
-            else
-            {
-                setOutBufferStatus("normal");
-            }
-
-//            mutexOut.release();
-//            outBuffFull.release();
-
-            return true;
-        }   
+        mutexOut.release();
+        outBuffFull.release();
+        return true;
+    }
          
     /**
      *  Transferring the transactions from the network buffer to the server
@@ -498,45 +487,39 @@ public class Network extends Thread {
      * @param inPacket transaction transferred from the input buffer to the server 
      * 
      */
-       public static boolean transferIn(Transactions inPacket)
-        {
-//            try{
-//                inBuffFull.acquire();
-//                mutexIn.acquire();
-//            }
-//            catch (InterruptedException e){
-//                e.printStackTrace();
-//            }
+    public static boolean transferIn(Transactions inPacket) {
+        try {
+            inBuffFull.acquire();
+            mutexIn.acquire();
+        }
+        catch(InterruptedException e){
+            e.printStackTrace();
+        }
 
-            inPacket.setAccountNumber(inComingPacket[outputIndexServer].getAccountNumber());
-            inPacket.setOperationType(inComingPacket[outputIndexServer].getOperationType());
-            inPacket.setTransactionAmount(inComingPacket[outputIndexServer].getTransactionAmount());
-            inPacket.setTransactionBalance(inComingPacket[outputIndexServer].getTransactionBalance());
-            inPacket.setTransactionError(inComingPacket[outputIndexServer].getTransactionError());
-            inPacket.setTransactionStatus("received");
+        inPacket.setAccountNumber(inComingPacket[outputIndexServer].getAccountNumber());
+        inPacket.setOperationType(inComingPacket[outputIndexServer].getOperationType());
+        inPacket.setTransactionAmount(inComingPacket[outputIndexServer].getTransactionAmount());
+        inPacket.setTransactionBalance(inComingPacket[outputIndexServer].getTransactionBalance());
+        inPacket.setTransactionError(inComingPacket[outputIndexServer].getTransactionError());
+        inPacket.setTransactionStatus("received");
 
-            /* System.out.println("\n DEBUG : Network.transferIn() - index outputIndexServer " + outputIndexServer); */
-            /* System.out.println("\n DEBUG : Network.transferIn() - account number " + inPacket.getAccountNumber()); */
+        /* System.out.println("\n DEBUG : Network.transferIn() - index outputIndexServer " + outputIndexServer); */
+        /* System.out.println("\n DEBUG : Network.transferIn() - account number " + inPacket.getAccountNumber()); */
 
-            setoutputIndexServer(((getoutputIndexServer() + 1) % getMaxNbPackets()));	/* Increment the input buffer index for the server */
-            /* Check if input buffer is empty */
-            if ( getoutputIndexServer( ) == getinputIndexClient( ))
-            {
-                setInBufferStatus("empty");
+        setoutputIndexServer(((getoutputIndexServer() + 1) % getMaxNbPackets()));	/* Increment the input buffer index for the server */
+        /* Check if input buffer is empty */
+        if(getoutputIndexServer() == getinputIndexClient()) {
+            setInBufferStatus("empty");
+            /* System.out.println("\n DEBUG : Network.transferIn() - inComingBuffer status " + getInBufferStatus()); */
+        }
+        else {
+            setInBufferStatus("normal");
+        }
 
-                /* System.out.println("\n DEBUG : Network.transferIn() - inComingBuffer status " + getInBufferStatus()); */
-            }
-            else
-            {
-                setInBufferStatus("normal");
-            }
-
-//            mutexIn.release();
-//            inBuffEmpty.release();
-
-
-            return true;
-        }   
+        mutexIn.release();
+        inBuffEmpty.release();
+        return true;
+    }
          
      /**
       *  Handling of connection requests through the network 
@@ -545,18 +528,13 @@ public class Network extends Thread {
       * @param IP
       * 
       */
-     public static boolean connect(String IP)
-     {
-         if (getNetworkStatus().equals("active"))
-         {
-             if (getClientIP().equals(IP))
-             {
+     public static boolean connect(String IP) {
+         if(getNetworkStatus().equals("active")) {
+             if(getClientIP().equals(IP)) {
                 setClientConnectionStatus("connected");
                 setPortID(0);
              }
-             else
-             if (getServerIP().equals(IP))
-             {
+             else if(getServerIP().equals(IP)) {
                 setServerConnectionStatus("connected");
              }
              return true;
@@ -571,17 +549,12 @@ public class Network extends Thread {
       * @param IP
       * 
       */
-     public static boolean disconnect(String IP)
-     {
-          if (getNetworkStatus( ).equals("active"))
-         {
-             if (getClientIP().equals(IP))
-             {
+     public static boolean disconnect(String IP) {
+          if(getNetworkStatus().equals("active")) {
+             if(getClientIP().equals(IP)) {
                 setClientConnectionStatus("disconnected");
              }
-             else
-             if (getServerIP().equals(IP))
-             {
+             else if(getServerIP().equals(IP)) {
                 setServerConnectionStatus("disconnected");
              }
              return true;
@@ -595,8 +568,7 @@ public class Network extends Thread {
       * 
       * @return String representation
       */
-	    public String toString() 
-	    {
+	    public String toString() {
 	        return ("\n Network status " + getNetworkStatus() + "Input buffer " + getInBufferStatus() + "Output buffer " + getOutBufferStatus());
 	    }
        
@@ -606,16 +578,19 @@ public class Network extends Thread {
      * @return 
      * @param
      */
-    public void run()
-    {	
-    	/* System.out.println("\n DEBUG : Network.run() - starting network thread"); */
+    public void run() {
+//    	System.out.println("\n DEBUG : Network.run() - starting network thread");
     	
-    	while (true)
-    	{
+    	while (true) {
+            /* Implement here the code for the run method ... */
+            // The network thread executes an infinite loop that ends when both client and server
+            // threads have disconnected. In case the client or sever threads are still connected
+            // the network thread must continuously yield the cpu.
     		if (getClientConnectionStatus().equals("disconnected") && getServerConnectionStatus().equals("disconnected")) {
                 System.out.println("\n Terminating network thread - Client " + getClientConnectionStatus() + " Server " + getServerConnectionStatus());
                 return;
-            } else {
+            }
+            else {
                 Thread.yield();
             }
     	}    

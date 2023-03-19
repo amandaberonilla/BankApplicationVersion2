@@ -21,28 +21,28 @@ public class Driver extends Thread {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-//        try{
-//            PrintStream output = new PrintStream("Test_unsynchronized.txt");
-//            System.setOut(output);
-//        }catch(FileNotFoundException e){
-//            System.out.println("FILE NOT FOUND");
-//            System.exit(0);
-//        }
-        Network objNetwork = new Network();            /* Activate the network */
+
+        // Welcome Message
+        displayMessage();
+
+        /* Complete here the code for the main method ...*/
+        // Network Thread
+        Network objNetwork = new Network();
         objNetwork.start();
-        Server server1 = new Server("Server1");
-        server1.start();
-        Server server2 = new Server("Server2");
-        server2.start();
-//        Server server3 = new Server("Server3");
-//        server3.start();
-        Client objClient1 = new Client("sending");          /* Start the sending client thread */
+
+        // Server Threads
+        Server objServer1 = new Server("Thread1");
+        objServer1.start();
+        Server objServer2 = new Server("Thread2");
+        objServer2.start();
+        Server objServer3 = new Server("Thread3");
+        objServer3.start();
+
+        // Client Threads
+        Client objClient1 = new Client("sending");
         objClient1.start();
-        Client objClient2 = new Client("receiving");        /* Start the receiving client thread */
+        Client objClient2 = new Client("receiving");
         objClient2.start();
-        
-      /*..............................................................................................................................................................*/
-       
     }
     
  }
